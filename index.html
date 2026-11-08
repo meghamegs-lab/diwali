@@ -1272,7 +1272,7 @@ function showText(idx, burst){
     if (burst){ const a = Math.random() * 6.28, b = Math.acos(2 * Math.random() - 1), s = rand(6, 16); txPos.set([0, 0, 0], i * 3); txVel.set([Math.sin(b) * Math.cos(a) * s, Math.cos(b) * s, Math.sin(b) * Math.sin(a) * s], i * 3); }
     else { txVel[i * 3] += rand(-3, 3); txVel[i * 3 + 1] += rand(-1, 4); txVel[i * 3 + 2] += rand(-3, 3); }
   }
-  txGoal = 1; txNext = performance.now() + 5600;
+  txGoal = 1; txNext = performance.now() + 3000;
 }
 function updateText(dt, ts){
   txOn += (txGoal - txOn) * Math.min(1, dt * 1.5);
@@ -1291,7 +1291,7 @@ function updateText(dt, ts){
   // golden drips falling off the letters
   if (false) for (let n = 0; n < 1; n++){ const i = Math.random() * TXN | 0; if (!txHas[i]) continue; tmpP.set(txPos[i * 3], txPos[i * 3 + 1], txPos[i * 3 + 2]); txGroup.localToWorld(tmpP); emit(tmpP.x, tmpP.y, tmpP.z, rand(-.15, .15), rand(-.6, -.1), rand(-.15, .15), C(1.6, 1.0, .35), rand(.7, 1.2), .03, 1.2, 2.2, {c2: C(.8, .3, .08)}); }
   if (txGoal && performance.now() > txNext){ const nx = (txIdx + 1) % TEXTS.length; // after all three wishes, step inside on our own (once)
-    if (nx === 0 && !autoIn && !window.__noAuto && mode === "orbit" && $("sheet").getAttribute("aria-hidden") !== "false"){ autoIn = true; goInside(); } else showText(nx, false); }
+    if (nx === 0 && !autoIn && !window.__noAuto && (mode === "orbit" || (startOrbit(), true)) && $("sheet").getAttribute("aria-hidden") !== "false"){ autoIn = true; goInside(); } else showText(nx, false); }
 }
 
 /* ---------- sky lanterns (3D paper lanterns drifting up) ---------- */
@@ -1443,11 +1443,11 @@ function lightUp(){
   if (mode !== "diya") return; mode = "story"; const n = now();
   $("cap").innerHTML = "";
   diyaSpots[0].at = n + 350; dawnAt = n + 500; matchStrike(); setTimeout(flameCatch, 350); Lmain.userData.on = 1;
-  at(700, () => fly(["rangoli"], 2.8));
+  at(500, () => fly(["rangoli"], 2.0));
   at(800, () => { rangoliStart = now(); });
   lightGroup("ring", n + 1100, 35, (a, b) => Math.atan2(a.z - 10, a.x) - Math.atan2(b.z - 10, b.x));
   at(1400, () => { Lrang.userData.on = 1; bell(587.33, .07, 2); });
-  at(3200, () => fly(["sweep", "family", "house"], 6.2));
+  at(2300, () => fly(["sweep", "family", "house"], 3.9));
   lightGroup("walk", n + 3600, 80, (a, b) => b.z - a.z); lightGroup("wall", n + 4000, 60, (a, b) => Math.abs(a.x) - Math.abs(b.x));
   at(3800, () => { Lwalk1.userData.on = 1; });
   at(4400, () => { bulbs.forEach(b => { if (b.g === 3) b.at = now() + Math.max(0, 18 - b.z) * 50 + Math.random() * 200; }); });
@@ -1456,9 +1456,9 @@ function lightUp(){
     bulbs.forEach(b => { if (b.g === 1 || b.g === 2 || b.g === 4) b.at = now() + b.y * 230 + Math.abs(b.x) * 25 + Math.random() * 120; });
     kandils.forEach((q, i) => q.at = now() + 500 + i * 140); bell(440, .2); });
   at(1500, () => { famSpot.userData.on = 1; });
-  at(7400, () => launch(TC.x, TC.y, TC.z, () => { showText(0, true); }));
-  at(8600, () => { autoFire = true; nextFire = 0; anaarUntil = now() + 10000; $("to").parentElement.classList.add("show"); });
-  at(9800, () => { startOrbit(); $("barOut").classList.add("show"); $("cap").innerHTML = '<span class="blink">Drag to look around · tap the sky for fireworks</span>'; setTimeout(() => { if (mode === "orbit") $("cap").innerHTML = ""; }, 7000); });
+  at(4000, () => launch(TC.x, TC.y, TC.z, () => { showText(0, true); }));
+  at(5200, () => { autoFire = true; nextFire = 0; anaarUntil = now() + 10000; $("to").parentElement.classList.add("show"); });
+  at(6300, () => { startOrbit(); $("barOut").classList.add("show"); $("cap").innerHTML = '<span class="blink">Drag to look around · tap the sky for fireworks</span>'; setTimeout(() => { if (mode === "orbit") $("cap").innerHTML = ""; }, 7000); });
 }
 function warmFade(on){ const f = $("fade"); f.style.background = "#ffe3b0"; f.classList.toggle("off", !on); }
 function pavapuri(){
@@ -1499,7 +1499,7 @@ function film(){
   const F = $("film"), s2 = $("sh2"); s2.style.transition = "none"; // the murti dissolves straight in over the opening door
   shotOn("sh2"); F.classList.add("on"); F.setAttribute("aria-hidden", "false"); void F.offsetWidth; s2.style.transition = ""; templeBell();
   T2(0, () => { $("pv1").classList.add("low"); T2(600, () => say("pv1", '<span class="a" lang="hi">भगवान महावीर स्वामी मोक्ष कल्याणक</span><span class="b">Bhagwan Mahavir Swami Moksha Kalyanak</span>')); });
-  T2(2700, () => { $("pv1").classList.remove("show"); setTimeout(() => $("pv1").classList.remove("low"), 1500); shotOn("sh4"); ghanta(); filmPetals(true); mode = "inside";
+  T2(2000, () => { $("pv1").classList.remove("show"); setTimeout(() => $("pv1").classList.remove("low"), 1500); shotOn("sh4"); ghanta(); filmPetals(true); mode = "inside";
     T2(900, () => { $("jj").classList.add("show"); $("barIn").classList.add("show"); }); });
 }
 function goInside(){
@@ -1552,7 +1552,7 @@ function frame(){
   { const c = $("cap"); if (mode === "diya"){ const d = diyaSpots[0]; capV.set(d.x, d.y, d.z).project(camera);
       c.classList.add("near"); c.style.left = ((capV.x + 1) / 2 * innerWidth) + "px"; c.style.top = Math.max(70, (1 - capV.y) / 2 * innerHeight - Math.min(innerWidth, innerHeight) * .24 - c.offsetHeight) + "px"; }
     else if (c.classList.contains("near")){ c.classList.remove("near"); c.style.left = c.style.top = ""; } }
-  if (n > rangoliStart) drawRangoli(clamp((n - rangoliStart) / 2200, 0, 1));
+  if (n > rangoliStart) drawRangoli(clamp((n - rangoliStart) / 1600, 0, 1));
   houseOn = smooth(houseAt, houseAt + 1800, n);
   { const dk = clamp((n - dawnAt) / 7000, 0, 1), dw = dk * dk * (3 - 2 * dk); hemi.intensity = .42 * (.3 + .7 * dw); amb.intensity = .12 * (.4 + .6 * dw); moon.intensity = .42 * (.35 + .65 * dw); }
   M.win.emissiveIntensity = .03 + houseOn * .92; M.garage.emissiveIntensity = .04 + houseOn * .35; M.plaque.emissiveIntensity = .3 + houseOn * .5; M.door.emissive.setScalar(houseOn * .05);
