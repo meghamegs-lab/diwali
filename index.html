@@ -358,7 +358,7 @@ function buildPost(){
   composer = new T.EffectComposer(renderer, rt);
   composer.addPass(new T.RenderPass(scene, camera));
   const bs = tier === "high" ? 1 : .5;
-  bloom = new T.UnrealBloomPass(new T.Vector2(innerWidth * bs, innerHeight * bs), .3, .16, 1.15);
+  bloom = new T.UnrealBloomPass(new T.Vector2(innerWidth * bs, innerHeight * bs), .22, .12, 1.25);
   composer.addPass(bloom);
   const grade = new T.ShaderPass(GradeShader); grade.renderToScreen = true;
   composer.addPass(grade);
@@ -939,7 +939,12 @@ kandil(-17, 4.6, 9, .7, 0xff4f8b, "star", .9); kandil(21.5, 4.8, -2, .7, 0xffc21
 /* ---------- the family (cut-out) with a warm glow so they stand out ---------- */
 const FAM = new T.Group(); FAM.position.set(0, .0, 3.15); scene.add(FAM);
 const famH = 2.45, famW = famH * 969 / 851;
-const HANDS = [[.20, .50], [.39, .50], [.71, .80], [.86, .58]]; // sparkler tips just above each pair of hands (u, v on the photo)
+// real phuljhadi sticks held in the girls' hands (hand u, v on the photo; direction; length), burning tips throw sparks
+const SPK = [[.19, .583, -.75, -.62, .46], [.382, .56, .7, -.66, .38], [.855, .635, .72, -.62, .42]].map(([u, v, dx, dy, L]) => {
+  const l = Math.hypot(dx, dy); dx /= l; dy /= l; const hx = (u - .5) * famW, hy = (1 - v) * famH;
+  const st = add(new T.CylinderGeometry(.0045, .0045, L, 6), new T.MeshStandardMaterial({color: 0x6a6a70, roughness: .45, metalness: .6}), hx + dx * L / 2, hy + dy * L / 2, .05, FAM); st.rotation.z = Math.atan2(-dx, dy);
+  const tip = add(new T.SphereGeometry(.016, 10, 8), new T.MeshBasicMaterial({color: new T.Color(4, 3.1, 1.9)}), hx + dx * L, hy + dy * L, .05, FAM);
+  return {tip}; });
 const famMat = new T.MeshStandardMaterial({map: glowFamilyTex, transparent: true, alphaTest: .35, roughness: .9, emissiveMap: glowFamilyTex, emissive: 0xffe2c4, emissiveIntensity: .22, opacity: 0, side: T.DoubleSide});
 const famPlane = add(new T.PlaneGeometry(famW, famH), famMat, 0, famH / 2, 0, FAM); famPlane.castShadow = true;
 famPlane.customDepthMaterial = new T.MeshDepthMaterial({depthPacking: T.RGBADepthPacking, map: glowFamilyTex, alphaTest: .35});
@@ -1246,7 +1251,7 @@ const TEXTS = [
   [["ದೀಪಾವಳಿಯ", '700 160px "Baloo Tamma 2", "Noto Sans Kannada", sans-serif', 230], ["ಶುಭಾಶಯಗಳು", '700 160px "Baloo Tamma 2", "Noto Sans Kannada", sans-serif', 445]],
   [["दीपावली की", '160px "Rozha One", "Noto Sans Devanagari", serif', 225], ["शुभकामनाएँ", '160px "Rozha One", "Noto Sans Devanagari", serif', 440]]
 ];
-let txOn = 0, txGoal = 0, txIdx = -1, txNext = 0, txSpacing = .07;
+let txOn = 0, txGoal = 0, txIdx = -1, txNext = 0, txSpacing = .07, autoIn = false;
 function sampleText(lines){
   const W = 1800, Hh = 560, c = document.createElement("canvas"); c.width = W; c.height = Hh; const g = c.getContext("2d");
   g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
@@ -1264,7 +1269,7 @@ function showText(idx, burst){
     if (burst){ const a = Math.random() * 6.28, b = Math.acos(2 * Math.random() - 1), s = rand(6, 16); txPos.set([0, 0, 0], i * 3); txVel.set([Math.sin(b) * Math.cos(a) * s, Math.cos(b) * s, Math.sin(b) * Math.sin(a) * s], i * 3); }
     else { txVel[i * 3] += rand(-3, 3); txVel[i * 3 + 1] += rand(-1, 4); txVel[i * 3 + 2] += rand(-3, 3); }
   }
-  txGoal = 1; txNext = performance.now() + 8000;
+  txGoal = 1; txNext = performance.now() + 5600;
 }
 function updateText(dt, ts){
   txOn += (txGoal - txOn) * Math.min(1, dt * 1.5);
@@ -1282,20 +1287,21 @@ function updateText(dt, ts){
   txGeo.attributes.position.needsUpdate = true; txGeo.attributes.color.needsUpdate = true; txGeo.attributes.aSize.needsUpdate = true;
   // golden drips falling off the letters
   if (false) for (let n = 0; n < 1; n++){ const i = Math.random() * TXN | 0; if (!txHas[i]) continue; tmpP.set(txPos[i * 3], txPos[i * 3 + 1], txPos[i * 3 + 2]); txGroup.localToWorld(tmpP); emit(tmpP.x, tmpP.y, tmpP.z, rand(-.15, .15), rand(-.6, -.1), rand(-.15, .15), C(1.6, 1.0, .35), rand(.7, 1.2), .03, 1.2, 2.2, {c2: C(.8, .3, .08)}); }
-  if (txGoal && performance.now() > txNext) showText((txIdx + 1) % TEXTS.length, false);
+  if (txGoal && performance.now() > txNext){ const nx = (txIdx + 1) % TEXTS.length; // after all three wishes, step inside on our own (once)
+    if (nx === 0 && !autoIn && !window.__noAuto && mode === "orbit" && $("sheet").getAttribute("aria-hidden") !== "false"){ autoIn = true; goInside(); } else showText(nx, false); }
 }
 
 /* ---------- sky lanterns (3D paper lanterns drifting up) ---------- */
-const LN = mobile ? 60 : 110;
+const LN = mobile ? 22 : 36;
 const lanternGeo = new T.LatheGeometry([new T.Vector2(.0, 0), new T.Vector2(.2, 0), new T.Vector2(.26, .2), new T.Vector2(.31, .45), new T.Vector2(.32, .58), new T.Vector2(.0, .6)], 14);
-const lanternMesh = new T.InstancedMesh(lanternGeo, new T.MeshBasicMaterial({color: new T.Color(2.2, 1.05, .38), fog: false}), LN);
+const lanternMesh = new T.InstancedMesh(lanternGeo, new T.MeshBasicMaterial({color: new T.Color(1.5, .78, .3), fog: false}), LN);
 lanternMesh.instanceMatrix.setUsage(T.DynamicDrawUsage); lanternMesh.frustumCulled = false; scene.add(lanternMesh);
 const lanterns = [];
 for (let i = 0; i < LN; i++){ const a = rand(-Math.PI * .85, Math.PI * .85); const r = rand(18, 70); lanterns.push({x: Math.sin(a) * r, y: rand(6, 55), z: -Math.abs(Math.cos(a)) * r * .9 - 4, v: rand(.25, .6), s: rand(.8, 1.5), ph: Math.random() * 6}); }
 const lgPos = new Float32Array(LN * 3), lgGeo = new T.BufferGeometry(); lgGeo.setAttribute("position", new T.BufferAttribute(lgPos, 3).setUsage(T.DynamicDrawUsage));
 const lgCol = new Float32Array(LN * 3).fill(.7), lgSz = new Float32Array(LN).fill(.7);
 lgGeo.setAttribute("color", new T.BufferAttribute(lgCol, 3)); lgGeo.setAttribute("aSize", new T.BufferAttribute(lgSz, 1));
-const lgPts = new T.Points(lgGeo, pMat); lgPts.frustumCulled = false; scene.add(lgPts);
+const lgPts = new T.Points(lgGeo, pMat); lgPts.frustumCulled = false; // glow halos removed: they read as blurry squares
 for (let i = 0; i < LN; i++){ lgCol[i * 3] = .9; lgCol[i * 3 + 1] = .45; lgCol[i * 3 + 2] = .14; }
 let lanternRelease = null;
 function updateLanterns(dt, ts){
@@ -1350,7 +1356,7 @@ const SH = {
   rangoli: {p: V(0, 4.4, 17.2), t: V(0, 1.1, 7.2)},
   sweep:   {p: V(9, 3.6, 14.5), t: V(0, 2.4, 3), wide: true, lift: 3},
   family:  {p: V(1.1, 2.0, 8.6), t: V(0, 1.7, 3.3)},
-  house:   {p: V(0, 2.6, 16.2), t: V(0, 2.7, 1.5), pW: V(0, 3.4, 21), tW: V(0, 5.2, 1.5), wide: true, lift: -3.6}, // on tall phones look lower: less empty sky
+  house:   {p: V(0, 2.6, 16.2), t: V(0, 2.7, 1.5), pW: V(0, 3.0, 16.8), tW: V(0, 4.0, 1.5), wide: true, lift: -3.6}, // on tall phones look lower: less empty sky
   porch:   {p: V(0, 1.8, 6.0), t: V(0, 1.75, 0)},
   door:    {p: V(0, 1.85, 1.0), t: V(0, 1.8, -3)},
   inside:  {p: V(0, 1.85, -3.6), t: V(0, 1.85, -8.4)},
@@ -1565,9 +1571,9 @@ function frame(){
     emit(r.x + rand(-.05, .05), r.y, r.z, rand(-.3, .3), -1.5, rand(-.3, .3), C(2.4, 1.5, .6), .7, .16, 2, 1, {tw: true});
     if (r.vy <= 0){ if (r.then) r.then(); else explode(r.x, r.y, r.z); rockets.splice(i, 1); } }
   anUpdate(dt, n < anaarUntil && outside, ts);
-  if (outside && famOn > .9 && FAM.visible && Lporch.userData.on){ // phuljhadi sparklers in our hands
-    const k = Math.round((mobile ? 110 : 200) * dt + Math.random() * .6);
-    for (const [u, v] of HANDS){ capV.set((u - .5) * famW, (1 - v) * famH, .06); FAM.localToWorld(capV); anEmit(capV.x, capV.z, k, capV.y, 1.7); } }
+  if (outside && famOn > .5 && FAM.visible){ // the sparklers burn from the moment we appear
+    const k = Math.round((mobile ? 120 : 220) * dt + Math.random() * .6);
+    for (const q of SPK){ q.tip.scale.setScalar(.8 + .4 * Math.random()); q.tip.getWorldPosition(capV); anEmit(capV.x, capV.z, k, capV.y, 1.5); } }
   updateParticles(dt); updateText(dt, ts); updateLanterns(dt, ts); trUpdate(dt);
   if (petals.visible){ for (let i = 0; i < PET; i++){ const q = petV[i]; petPos[i * 3 + 1] -= q.v * dt; petPos[i * 3] += Math.sin(ts * 1.4 + q.ph) * .004; if (petPos[i * 3 + 1] < .5) petPos[i * 3 + 1] = petalsOn ? 3.8 : -5; } petGeo.attributes.position.needsUpdate = true; }
   if (composer) composer.render(dt); else renderer.render(scene, camera);
